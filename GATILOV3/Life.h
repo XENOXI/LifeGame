@@ -11,7 +11,7 @@ class field
 {
 private:
 	bool** SubField=NULL;
-
+	int iter_cnt=0;
 	bool get_cell(int,int);
 public:
 	void gen();
@@ -21,7 +21,7 @@ public:
 	std::vector<int> reborn_rule;
 	std::vector<int> life_rule;
 	field();
-	~field();
+
 	field(int , int , int , int , std::vector<int> , std::vector<int>, std::vector<int>, std::vector<int>);
 	void step(int);
 	void print();
@@ -39,7 +39,7 @@ class ui
 private:
 	field table;
 	std::string del_space(std::string);
-	void option(std::string);
+	bool option(std::string);
 	void throw_exp(int);
 	std::vector<int> parser_numbers(std::string*);
 	std::string game_name;

@@ -7,7 +7,8 @@
 int main(int argc,char* argv[])
 {
 
-	ui ss(offline,argc,argv);
+	
+	ui ss(file,argc,argv,"fl.txt");
 	while (true)
 	{	
 		ss.work();

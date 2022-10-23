@@ -31,5 +31,8 @@
     <Text Include="fl.txt">
       <Filter>Исходные файлы</Filter>
     </Text>
+    <Text Include="new.txt">
+      <Filter>Исходные файлы</Filter>
+    </Text>
   </ItemGroup>
 </Project>

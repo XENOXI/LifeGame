@@ -2,7 +2,7 @@
 #include <iostream>
 #include <locale>
 #include <sstream>
-
+#include <time.h>
 bool field::get_cell(int i,int j)
 {
 	if (i < 0)
@@ -19,6 +19,7 @@ bool field::get_cell(int i,int j)
 
 void field::gen()
 {
+	srand(time(0));
 	std::vector<int> a;
 	std::vector<int> reb={3}, lif={2,3};
 	*this = field(SIZE, SIZE, 0, 0, a, a, reb, lif);
@@ -56,22 +57,9 @@ field::field(int max_x,int max_y,int min_x,int min_y,std::vector<int> x, std::ve
 }
 
 
-field::~field()
-{
-	for (int i = 0; i < size_x; i++)
-	{
-		delete Field[i];
-		delete SubField[i];
-	}
-	delete Field;
-	delete SubField;
-	Field = NULL;
-	SubField = NULL;
-}
-
-
 
 void field::step(int step_cnt) {
+	iter_cnt += step_cnt;
 	for (int w = 0; w < step_cnt; w++)
 	{
 
@@ -113,6 +101,14 @@ void field::step(int step_cnt) {
 
 void field::print()
 {
+	setlocale(LC_ALL, "Russian");
+	std::cout << "Правила перехода: B";
+	for (int i : reborn_rule)
+		std::cout << i;
+	std::cout << "/S";
+	for (int i : life_rule)
+		std::cout << i;
+	std::cout << "\nИтерация:" << iter_cnt << '\n';
 	setlocale(LC_ALL, "C");
 	char v_e = -70; 
 	char block = -37;
@@ -148,7 +144,7 @@ void field::print()
 }
 
 
-void ui::option(std::string str)
+bool ui::option(std::string str)
 {
 	std::stringstream buff;
 	buff << str;
@@ -158,12 +154,11 @@ void ui::option(std::string str)
 		buff >> str;
 		if (str != "1.06")
 		{
-			cls = false;
-			setlocale(LC_ALL, "Russian");
-			std::cout << "Версия файла не 1.06 \n";
+			throw_exp(0);
+			return false;
 			//table.gen();
 		}
-		return;
+		return true;
 	}
 	if (str == "#R")
 	{
@@ -179,7 +174,7 @@ void ui::option(std::string str)
 		{
 			throw_exp(0);
 			//table.gen();
-			return;
+			return false;
 		}
 		if (is_reb)
 			table.reborn_rule = parser_numbers(&str);
@@ -189,23 +184,23 @@ void ui::option(std::string str)
 		if (str[0] != '/')
 		{
 			throw_exp(0);
-			return;
+			return false;
 		}
 		if (str[1] == 'B' && is_reb)
 		{
 			throw_exp(0);
-			return;
+			return false;
 		}
 		if (str[1] == 'S' && !is_reb)
 		{
 			throw_exp(0);
-			return;
+			return false;
 		}
 		if (str[1]!='S' && str[1]!='B')
 		{
 			throw_exp(0);
 			//table.gen();
-			return;
+			return false;
 		}
 
 		if (!is_reb)
@@ -213,15 +208,16 @@ void ui::option(std::string str)
 		else
 			table.life_rule = parser_numbers(&str);
 
-		return;
+		return true;
 	}
 	if (str == "#M")
 	{
 		buff >> game_name;
-		return;
+		return true;
 	}
 
 	throw_exp(0);
+	return false;
 }
 
 
@@ -271,7 +267,6 @@ ui::ui(gamemode m, int argc, char* argv[], std::string filename)
 	mode = m;
 	std::string str, out;
 	std::stringstream buff;
-	int iterat;
 	switch (m)
 	{
 	case file:
@@ -291,29 +286,29 @@ ui::ui(gamemode m, int argc, char* argv[], std::string filename)
 			str = (std::string)argv[i];
 			if (str == "-i")
 			{			
-				if (i + 1 > argc)
+				if (i + 1 > argc-1)
 				{
 					throw_exp(3);
 					exit(0);
 				}
-				buff << (std::string)argv[i + 1];
-				buff >> iterat;
+				tick((std::string)argv[i + 1]);
+
 			}
 			if (str.substr(0, 12) == "--iterations")
 			{
 				std::stringstream buff2;
 				std::vector <int> res;
 				str = str.substr(13);
-				buff << str;
-				buff >> iterat;
+				tick(str);
 			}
 			if (str == "-o")
 			{
-				if (i + 1 > argc)
+				if (i + 1 > argc-1 || (std::string)argv[i + 1]=="")
 				{
 					throw_exp(3);
 					exit(0);
 				}
+
 				out = (std::string)argv[i + 1];
 				
 			}
@@ -324,8 +319,6 @@ ui::ui(gamemode m, int argc, char* argv[], std::string filename)
 				out = str.substr(9);
 			}			
 		}
-		
-		table.step(iterat);
 		save(out);
 		exit(0);
 	default:
@@ -364,7 +357,9 @@ void ui::open(std::string filename)
 	for (int i = 0; i < 3; i++)
 	{
 		std::getline(file, buff);
-		option(buff);
+		if (!option(buff))
+			return;
+
 	}
 
 	std::vector<int> x, y;
@@ -401,6 +396,7 @@ void ui::work()
 	if (cls)
 	{
 		system("cls");
+		std::cout << game_name<<'\n';
 		table.print();
 	}
 	else
@@ -435,7 +431,7 @@ void ui::save(std::string filename)
 {
 	std::ofstream out(filename);
 
-	out << "#Life 2.0\n";
+	out << "#Life 1.06\n";
 	out << "#M " << game_name<<'\n';
 	out << "#R B";
 	for (int i : table.reborn_rule)
@@ -448,6 +444,7 @@ void ui::save(std::string filename)
 		for (int j = 0; j < table.size_y; j++)
 			if (table.Field[i][j])
 				out << i << ' ' << j << '\n';
+	out.close();
 				
 }
 
